@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FuelCast | Obsidian Elite</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --deep-black: #000000;
+            --glossy-black: #0a0a0a;
+            --border: rgba(255, 255, 255, 0.08);
+            --accent: #ffffff;
+            --error: #ff3b30;
+        }
+
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--deep-black);
+            color: #fff; margin: 0; padding: 40px 20px;
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            overflow-y: auto;
+        }
+
+        #errorAlert {
+            position: fixed; top: -100px; left: 50%;
+            transform: translateX(-50%);
+            background: var(--error); color: white;
+            padding: 16px 32px; border-radius: 50px;
+            font-weight: 800; font-size: 12px; letter-spacing: 1px;
+            box-shadow: 0 20px 40px rgba(255, 59, 48, 0.3);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 9999;
+        }
+        #errorAlert.show { top: 30px; }
+
+        .container {
+            width: 100%; max-width: 420px;
+            background: var(--glossy-black);
+            border: 1px solid var(--border);
+            border-radius: 35px;
+            padding: 40px;
+            box-shadow: 0 40px 100px rgba(0,0,0,1);
+        }
+
+        header h1 { 
+            font-size: 22px; font-weight: 800; margin: 0 0 40px 0; 
+            text-align: center; letter-spacing: 4px; color: #fff;
+        }
+
+        .section-label {
+            font-size: 10px; font-weight: 800; color: #444;
+            margin-bottom: 12px; text-transform: uppercase; letter-spacing: 2px;
+            display: block;
+        }
+
+        .fuel-selection { display: flex; flex-direction: column; gap: 8px; margin-bottom: 30px; }
+
+        .fuel-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            padding: 18px; border-radius: 18px;
+            color: #555; font-weight: 700; font-size: 14px;
+            cursor: pointer; transition: 0.3s; text-align: left;
+            outline: none;
+        }
+
+        .fuel-btn.active {
+            background: #fff; color: #000; border-color: #fff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            transform: scale(1.02);
+        }
+
+        .input-box { position: relative; margin-bottom: 25px; }
+
+        input {
+            width: 100%; padding: 22px;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--border);
+            border-radius: 18px; color: #fff;
+            font-size: 18px; font-weight: 700;
+            outline: none; transition: 0.3s;
+        }
+
+        input:focus { border-color: #444; background: rgba(255,255,255,0.03); }
+
+        .unit {
+            position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+            font-size: 9px; font-weight: 800; color: #333; pointer-events: none;
+        }
+
+        .main-btn {
+            width: 100%; padding: 22px;
+            background: #fff; border: none; border-radius: 18px;
+            color: #000; font-size: 13px; font-weight: 900;
+            text-transform: uppercase; cursor: pointer; transition: 0.4s;
+            margin-top: 10px; letter-spacing: 2px;
+            position: relative; overflow: hidden;
+        }
+
+        .main-btn:active { transform: scale(0.96); }
+
+        #resultModal {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.0); z-index: 1000;
+            align-items: center; justify-content: center; padding: 20px;
+            transition: background 0.4s ease;
+        }
+
+        #resultModal.active {
+            display: flex; background: rgba(0,0,0,0.98);
+        }
+
+        .result-card {
+            background: #050505; border: 1px solid var(--border);
+            padding: 50px 40px 40px 40px; border-radius: 35px; width: 100%; max-width: 380px;
+            text-align: center; position: relative;
+            transform: scale(0.8); opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #resultModal.active .result-card {
+            transform: scale(1); opacity: 1;
+        }
+
+        /* TOMBOL SILANG */
+        .close-icon {
+            position: absolute; top: 20px; right: 20px;
+            width: 35px; height: 35px; background: rgba(255,255,255,0.05);
+            border-radius: 50%; border: 1px solid var(--border);
+            color: #fff; font-size: 20px; display: flex;
+            align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.3s;
+        }
+
+        .close-icon:hover { background: #fff; color: #000; }
+
+        .res-val { font-size: 38px; font-weight: 800; margin: 15px 0; color: #fff; }
+
+        .res-info {
+            display: flex; justify-content: space-between; padding: 15px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 13px; color: #666;
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body>
+
+    <div id="errorAlert">⚠️ LENGKAPI SEMUA DATA</div>
+
+    <div id="resultModal">
+        <div class="result-card">
+            <div class="close-icon" onclick="closeModal()">&times;</div>
+            <span class="section-label" style="color:#555">Estimasi Total Biaya</span>
+            <div class="res-val" id="resTotal">Rp 0</div>
+            
+            <div class="res-info"><span>Volume BBM</span><b id="resLiter" style="color:#fff">-</b></div>
+            <div class="res-info"><span>Jenis BBM</span><b id="resName" style="color:#fff">-</b></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header><h1>FUELCAST</h1></header>
+
+        <span class="section-label">1. Pilih Bahan Bakar</span>
+        <div class="fuel-selection">
+            <button class="fuel-btn active" onclick="setFuel(this, 14500, 'Pertamax Turbo')">Pertamax Turbo</button>
+            <button class="fuel-btn" onclick="setFuel(this, 12950, 'Pertamax')">Pertamax</button>
+            <button class="fuel-btn" onclick="setFuel(this, 10000, 'Pertalite')">Pertalite</button>
+        </div>
+
+        <span class="section-label">2. Detail Perjalanan</span>
+        <div class="input-box">
+            <input type="number" id="distance" placeholder="0" inputmode="decimal">
+            <span class="unit">JARAK (KM)</span>
+        </div>
+
+        <div class="input-box">
+            <input type="number" id="efficiency" placeholder="0" inputmode="decimal">
+            <span class="unit">KONSUMSI (KM/L)</span>
+        </div>
+
+        <button class="main-btn" onclick="calculate()">Hitung Sekarang</button>
+    </div>
+
+    <script>
+        let currentPrice = 14500;
+        let currentName = "Pertamax Turbo";
+
+        function setFuel(btn, price, name) {
+            document.querySelectorAll('.fuel-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentPrice = price;
+            currentName = name;
+        }
+
+        function showError() {
+            const alert = document.getElementById('errorAlert');
+            alert.classList.add('show');
+            setTimeout(() => alert.classList.remove('show'), 3000);
+        }
+
+        function calculate() {
+            const dist = document.getElementById('distance').value;
+            const eff = document.getElementById('efficiency').value;
+            const btn = document.querySelector('.main-btn');
+
+            if (!dist || !eff || parseFloat(dist) <= 0 || parseFloat(eff) <= 0) {
+                showError();
+                return;
+            }
+
+            btn.innerText = "MENGHITUNG...";
+            btn.style.pointerEvents = "none";
+            btn.style.opacity = "0.7";
+
+            setTimeout(() => {
+                const liter = parseFloat(dist) / parseFloat(eff);
+                const total = liter * currentPrice;
+
+                document.getElementById('resTotal').innerText = "Rp " + Math.round(total).toLocaleString('id-ID');
+                document.getElementById('resLiter').innerText = liter.toFixed(2) + " L";
+                document.getElementById('resName').innerText = currentName;
+                
+                const modal = document.getElementById('resultModal');
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('active'), 10);
+                
+                btn.innerText = "Hitung Sekarang";
+                btn.style.pointerEvents = "all";
+                btn.style.opacity = "1";
+            }, 800);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('resultModal');
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 400);
+        }
+    </script>
+</body>
+</html>
